@@ -13,32 +13,53 @@ class HomePage extends StatefulWidget {
 }
 
 class _HomePageState extends State<HomePage> {
-  List<Post> posts = [];
-
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    getPosts();
-  }
-
-  void getPosts() async {
-    var p = await Service().getPosts();
-    setState(() {
-      posts = p;
-    });
-  }
+  var result = Service().getPosts();
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: ListView.builder(
-        itemCount: posts.length,
-        itemBuilder: (context, index) {
-          return ListTile(
-            title: Text(posts[index].title),
+      body: FutureBuilder(
+        future: result,
+        builder: (context, snapshot) {
+          if (snapshot.hasData) {
+            return normalBuild(snapshot.data ?? []);
+          }
+          if (snapshot.hasError) {
+            return errorBuild(snapshot.error.toString());
+          }
+
+          return const Center(
+            child: CircularProgressIndicator(),
           );
         },
+      ),
+    );
+  }
+
+  Widget normalBuild(List<Post> posts) {
+    return ListView.builder(
+      itemCount: posts.length,
+      itemBuilder: (context, index) {
+        return ListTile(
+          title: Text(posts[index].title),
+        );
+      },
+    );
+  }
+
+  Widget errorBuild(String errMsg) {
+    return Center(
+      child: Column(
+        children: [
+          Text(errMsg),
+          ElevatedButton(
+              onPressed: () {
+                setState(() {
+                  result = Service().getPosts();
+                });
+              },
+              child: const Text("Reload"))
+        ],
       ),
     );
   }
